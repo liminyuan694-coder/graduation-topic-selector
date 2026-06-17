@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>毕业设计选题筛选器</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">BD</span>
+      <div>
+        <strong>毕业设计选题筛选器</strong>
+        <span>基于本地推介文件整理</span>
+      </div>
+    </div>
+    <button class="ghost-button" id="resetAll" type="button">清空筛选</button>
+  </header>
+
+  <main>
+    <section class="tool-panel" aria-labelledby="page-title">
+      <div class="tool-copy">
+        <p class="kicker">2027 建筑学院毕业设计</p>
+        <h1 id="page-title">先按你的能力和偏好筛题，再打开详情核对。</h1>
+        <p class="lead">每个题目的适合人群、能力标签和难度为基于材料推测。建议把它作为初筛入口，再回到原始 PDF 或简表确认。</p>
+      </div>
+      <div class="search-box">
+        <label for="searchInput">搜索题名、地点、教师、关键词</label>
+        <input id="searchInput" type="search" placeholder="例如：AI、城市更新、医疗、乡村、航站楼">
+      </div>
+      <div class="quick-match">
+        <div class="section-heading">
+          <h2>快速匹配</h2>
+          <p>点选越多，排序越偏向你的偏好。</p>
+        </div>
+        <div class="chip-row" id="matchChips"></div>
+      </div>
+    </section>
+
+    <section class="filters" aria-label="筛选条件">
+      <div class="filter-block">
+        <div class="section-heading">
+          <h2>适合人群</h2>
+        </div>
+        <div class="chip-row" id="audienceChips"></div>
+      </div>
+      <div class="filter-block">
+        <div class="section-heading">
+          <h2>能力要求</h2>
+        </div>
+        <div class="chip-row" id="skillChips"></div>
+      </div>
+      <div class="select-grid">
+        <label>题目类型
+          <select id="typeSelect">
+            <option value="">全部类型</option>
+          </select>
+        </label>
+        <label>设计性质
+          <select id="natureSelect">
+            <option value="">全部性质</option>
+          </select>
+        </label>
+        <label>最高难度
+          <select id="maxDifficulty">
+            <option value="">不限</option>
+            <option value="3">3 星以内</option>
+            <option value="4">4 星以内</option>
+            <option value="5">5 星以内</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="result-head">
+      <div>
+        <h2>题目列表</h2>
+        <p id="resultSummary">正在载入</p>
+      </div>
+      <div class="legend">
+        <span>低负担</span>
+        <span>中等</span>
+        <span>高强度</span>
+      </div>
+    </section>
+
+    <section class="cards" id="cards" aria-live="polite"></section>
+  </main>
+
+  <div class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-backdrop" data-close></div>
+    <article class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <button class="close-button" type="button" data-close>关闭</button>
+      <img id="drawerCover" alt="" class="drawer-cover">
+      <div class="drawer-content">
+        <p class="kicker" id="drawerNo"></p>
+        <h2 id="drawerTitle"></h2>
+        <p id="drawerSubtitle" class="drawer-subtitle"></p>
+        <div class="detail-grid" id="detailGrid"></div>
+        <section>
+          <h3>判断摘要</h3>
+          <p id="drawerSummary"></p>
+        </section>
+        <section>
+          <h3>适合与慎选</h3>
+          <p id="drawerBest"></p>
+          <p id="drawerCaution" class="caution"></p>
+        </section>
+        <section>
+          <h3>成果和来源</h3>
+          <p id="drawerDeliverables"></p>
+          <ul id="sourceList"></ul>
+        </section>
+      </div>
+    </article>
+  </div>
+
+  <script src="data/topics.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
