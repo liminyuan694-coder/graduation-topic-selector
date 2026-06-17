@@ -1,121 +1,55 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>毕业设计选题筛选器</title>
+  <title>毕业设计选题推荐器</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">BD</span>
-      <div>
-        <strong>毕业设计选题筛选器</strong>
-        <span>基于本地推介文件整理</span>
-      </div>
-    </div>
-    <button class="ghost-button" id="resetAll" type="button">清空筛选</button>
+    <a class="brand" href="#top"><span class="brand-mark">BD</span><span>毕业设计选题推荐器</span></a>
+    <button class="text-button" id="showAll" type="button">查看全部题目</button>
   </header>
-
-  <main>
-    <section class="tool-panel" aria-labelledby="page-title">
-      <div class="tool-copy">
-        <p class="kicker">2027 建筑学院毕业设计</p>
-        <h1 id="page-title">先按你的能力和偏好筛题，再打开详情核对。</h1>
-        <p class="lead">每个题目的适合人群、能力标签和难度为基于材料推测。建议把它作为初筛入口，再回到原始 PDF 或简表确认。</p>
-      </div>
-      <div class="search-box">
-        <label for="searchInput">搜索题名、地点、教师、关键词</label>
-        <input id="searchInput" type="search" placeholder="例如：AI、城市更新、医疗、乡村、航站楼">
-      </div>
-      <div class="quick-match">
-        <div class="section-heading">
-          <h2>快速匹配</h2>
-          <p>点选越多，排序越偏向你的偏好。</p>
-        </div>
-        <div class="chip-row" id="matchChips"></div>
-      </div>
-    </section>
-
-    <section class="filters" aria-label="筛选条件">
-      <div class="filter-block">
-        <div class="section-heading">
-          <h2>适合人群</h2>
-        </div>
-        <div class="chip-row" id="audienceChips"></div>
-      </div>
-      <div class="filter-block">
-        <div class="section-heading">
-          <h2>能力要求</h2>
-        </div>
-        <div class="chip-row" id="skillChips"></div>
-      </div>
-      <div class="select-grid">
-        <label>题目类型
-          <select id="typeSelect">
-            <option value="">全部类型</option>
-          </select>
-        </label>
-        <label>设计性质
-          <select id="natureSelect">
-            <option value="">全部性质</option>
-          </select>
-        </label>
-        <label>最高难度
-          <select id="maxDifficulty">
-            <option value="">不限</option>
-            <option value="3">3 星以内</option>
-            <option value="4">4 星以内</option>
-            <option value="5">5 星以内</option>
-          </select>
-        </label>
-      </div>
-    </section>
-
-    <section class="result-head">
+  <main id="top" class="page-shell">
+    <section class="hero">
       <div>
-        <h2>题目列表</h2>
-        <p id="resultSummary">正在载入</p>
+        <p class="kicker">建筑学毕业设计 · 快速匹配</p>
+        <h1>先选偏好，再生成推荐。</h1>
+        <p class="lead">不要在二十多个选题里硬翻。选几个你真实能接受的方向，系统会给出更适合的题目、匹配理由和慎选提醒。</p>
       </div>
-      <div class="legend">
-        <span>低负担</span>
-        <span>中等</span>
-        <span>高强度</span>
-      </div>
+      <div class="hero-panel"><span>01 选方向</span><span>02 生成推荐</span><span>03 打开详情核对</span></div>
     </section>
-
-    <section class="cards" id="cards" aria-live="polite"></section>
+    <section class="matcher">
+      <div class="matcher-head">
+        <div><p class="kicker">Preference</p><h2>你想做哪类题？</h2></div>
+        <button class="text-button muted" id="resetAll" type="button">重置</button>
+      </div>
+      <div class="question-block"><h3>题目方向</h3><div class="choice-grid" id="audienceChoices"></div></div>
+      <div class="question-block"><h3>工作方式</h3><div class="choice-grid compact" id="workChoices"></div></div>
+      <div class="question-block"><h3>加分偏好</h3><div class="choice-grid compact" id="valueChoices"></div></div>
+      <div class="search-line"><label for="searchInput">补充关键词</label><input id="searchInput" type="search" placeholder="例如：AI、医疗、乡村、城市更新、航站楼"></div>
+      <div class="action-row"><button class="primary-button" id="generateBtn" type="button">生成推荐</button><p id="selectionHint">已选择 0 个偏好</p></div>
+    </section>
+    <section class="results waiting" id="results" aria-live="polite">
+      <div class="result-copy"><div><p class="kicker">Result</p><h2 id="resultTitle">等待生成推荐</h2></div><p id="resultText">选几个方向后点击按钮，这里会弹出最适合你的题目。</p></div>
+      <div class="result-stack" id="cards"></div>
+    </section>
   </main>
-
   <div class="drawer" id="drawer" aria-hidden="true">
     <div class="drawer-backdrop" data-close></div>
     <article class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
       <button class="close-button" type="button" data-close>关闭</button>
-      <img id="drawerCover" alt="" class="drawer-cover">
+      <div id="drawerCover" class="drawer-cover topic-cover" aria-hidden="true"></div>
       <div class="drawer-content">
-        <p class="kicker" id="drawerNo"></p>
-        <h2 id="drawerTitle"></h2>
-        <p id="drawerSubtitle" class="drawer-subtitle"></p>
+        <p class="kicker" id="drawerNo"></p><h2 id="drawerTitle"></h2><p id="drawerSubtitle" class="drawer-subtitle"></p>
         <div class="detail-grid" id="detailGrid"></div>
-        <section>
-          <h3>判断摘要</h3>
-          <p id="drawerSummary"></p>
-        </section>
-        <section>
-          <h3>适合与慎选</h3>
-          <p id="drawerBest"></p>
-          <p id="drawerCaution" class="caution"></p>
-        </section>
-        <section>
-          <h3>成果和来源</h3>
-          <p id="drawerDeliverables"></p>
-          <ul id="sourceList"></ul>
-        </section>
+        <section><h3>判断摘要</h3><p id="drawerSummary"></p></section>
+        <section><h3>适合与慎选</h3><p id="drawerBest"></p><p id="drawerCaution" class="caution"></p></section>
+        <section><h3>成果和来源</h3><p id="drawerDeliverables"></p><ul id="sourceList"></ul></section>
       </div>
     </article>
   </div>
-
   <script src="data/topics.js"></script>
   <script src="app.js"></script>
 </body>
