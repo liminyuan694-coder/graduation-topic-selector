@@ -1,4 +1,4 @@
-﻿const data = window.TOPIC_DATA;
+const data = window.TOPIC_DATA;
 const topics = data.topics;
 const optionGroups = {
   audience: [{"id": "ai", "label": "AI / 数字工具", "audiences": ["AI/技术工具型"], "skills": ["AI辅助", "绿色分析"]}, {"id": "renewal", "label": "城市更新 / 存量改造", "audiences": ["城市更新型", "历史更新型"], "skills": ["存量更新", "旧厂房改造", "改扩建", "街区调研"]}, {"id": "public", "label": "公共建筑 / 复杂功能", "audiences": ["公共建筑型", "大型公建型", "交通建筑型", "教育建筑型"], "skills": ["复杂流线", "功能分区", "公共建筑", "高大空间"]}, {"id": "rural", "label": "乡村地域 / 文旅", "audiences": ["乡村地域型", "文旅策划型", "地域气候型"], "skills": ["乡村调研", "地域文化", "文旅策划"]}, {"id": "health", "label": "医疗康养 / 适老", "audiences": ["医疗康养型", "适老设计型"], "skills": ["医疗流程", "康养建筑", "适老设计", "无障碍"]}, {"id": "industry", "label": "产业园 / 工业技术", "audiences": ["产业技术型", "办公研发型"], "skills": ["产业园规划", "工业流程", "大跨结构", "研发建筑"]}, {"id": "commerce", "label": "商业策划 / 运营", "audiences": ["商业策划型", "商业场景型", "运营逻辑型"], "skills": ["商业策划", "业态组合", "社区运营"]}, {"id": "tectonic", "label": "建构结构 / 材料", "audiences": ["建构技术型", "结构系统型", "结构空间型"], "skills": ["木构建构", "结构设计", "材料构造", "材料表皮"]}],
@@ -78,14 +78,56 @@ function rankedTopics(limit = 6) {
   const filtered = (selected.size || query) ? ranked.filter((item) => item.score > 0) : ranked;
   return filtered.sort((a, b) => b.score - a.score || a.topic.no.localeCompare(b.topic.no, "zh-CN")).slice(0, limit);
 }
-function coverTone(topic) {
-  const tones = ["tone-ai", "tone-city", "tone-public", "tone-rural", "tone-health", "tone-industry", "tone-commerce", "tone-tectonic"];
-  const index = Number.parseInt(topic.no, 10) || 0;
-  return tones[index % tones.length];
+function coverKind(topic) {
+  const title = topic.title || "";
+  const audiences = topic.audiences || [];
+  const skills = topic.skills || [];
+  if (skills.includes("医疗流程") || audiences.includes("医疗康养型") || title.includes("医院") || title.includes("康养")) return "health";
+  if (skills.includes("机场总图") || title.includes("航站楼") || title.includes("机场")) return "terminal";
+  if (skills.includes("产业园规划") || skills.includes("工业流程") || audiences.includes("产业技术型")) return "industry";
+  if (audiences.includes("乡村地域型") || title.includes("乡村") || title.includes("水寨") || title.includes("村")) return "rural";
+  if (skills.includes("木构建构") || skills.includes("材料构造") || audiences.includes("建构技术型")) return "tectonic";
+  if (audiences.includes("教育建筑型") || title.includes("校园") || title.includes("中学") || title.includes("党校")) return "campus";
+  if (audiences.includes("商业策划型") || skills.includes("商业策划") || title.includes("商业")) return "commerce";
+  if (audiences.includes("城市更新型") || skills.includes("存量更新") || skills.includes("旧厂房改造")) return "renewal";
+  if (audiences.includes("AI/技术工具型") || skills.includes("AI辅助")) return "ai";
+  return "public";
 }
-function coverMarkup(topic) {
-  const tags = (topic.keywords || []).slice(0, 2).map((item) => `<span>${item}</span>`).join("");
-  return `<div class="topic-cover ${coverTone(topic)}"><div class="cover-no">${topic.no}</div><div class="cover-title">${topic.title}</div><div class="cover-tags">${tags}</div></div>`;
+function coverPalette(kind, topic) {
+  const palettes = {
+    ai: ["#153f3a", "#9bbb7d", "#e5d7a8"], renewal: ["#243238", "#a58b62", "#d55d3d"], public: ["#2f435c", "#d18b57", "#efe4c9"], rural: ["#31513b", "#c9a75d", "#8fb49b"],
+    health: ["#416a6f", "#b8d4cf", "#8e6d93"], industry: ["#363a42", "#c96542", "#d5d1bd"], commerce: ["#4a3d39", "#c19355", "#f1ddaf"],
+    tectonic: ["#2e4138", "#b69465", "#d7ccb4"], campus: ["#314a64", "#d0a64f", "#b7c7a0"], terminal: ["#2d3d4d", "#c86f48", "#d9d9d2"]
+  };
+  const base = palettes[kind] || palettes.public;
+  const shift = (Number.parseInt(topic.no, 10) || 0) % 3;
+  return [base[shift], base[(shift + 1) % 3], base[(shift + 2) % 3]];
+}
+function coverSvg(topic) {
+  const kind = coverKind(topic);
+  const [dark, mid, light] = coverPalette(kind, topic);
+  const seed = Number.parseInt(topic.no, 10) || 1;
+  const building = `<rect x="70" y="104" width="84" height="68" rx="4" fill="${light}" opacity=".95"/><rect x="170" y="82" width="116" height="90" rx="6" fill="${mid}" opacity=".96"/><rect x="306" y="112" width="86" height="60" rx="4" fill="${light}" opacity=".9"/>${Array.from({length: 11}, (_, i) => `<rect x="${188 + (i % 4) * 21}" y="${100 + Math.floor(i / 4) * 19}" width="9" height="8" rx="2" fill="${dark}" opacity=".32"/>`).join("")}`;
+  const trees = `<circle cx="58" cy="145" r="19" fill="${mid}"/><rect x="54" y="148" width="8" height="30" fill="${dark}" opacity=".45"/><circle cx="426" cy="142" r="18" fill="${light}"/><rect x="422" y="145" width="8" height="31" fill="${dark}" opacity=".42"/>`;
+  const scenes = {
+    ai: `${building}<path d="M85 75h85m-43-42v84M324 64h70m-35-34v68" stroke="${light}" stroke-width="5" stroke-linecap="round" opacity=".8"/><circle cx="127" cy="75" r="20" fill="none" stroke="${light}" stroke-width="5" opacity=".72"/><circle cx="359" cy="64" r="18" fill="none" stroke="${light}" stroke-width="5" opacity=".72"/>`,
+    renewal: `<path d="M58 158c48-38 96-38 144 0s96 38 144 0 76-36 104-12" fill="none" stroke="${light}" stroke-width="14" opacity=".35"/>${building}<rect x="88" y="62" width="66" height="82" fill="none" stroke="${light}" stroke-width="5" opacity=".75"/><path d="M91 82h60M91 103h60M91 124h60" stroke="${light}" stroke-width="3" opacity=".65"/>`,
+    public: `${building}<path d="M52 174h400" stroke="${dark}" stroke-width="10" opacity=".28"/><path d="M230 46l126 55H104z" fill="${light}" opacity=".9"/><path d="M125 105v65M168 105v65M211 105v65M254 105v65M297 105v65M340 105v65" stroke="${dark}" stroke-width="8" opacity=".32"/>`,
+    rural: `<path d="M0 146c62-36 128-36 190 0s120 38 170 4 96-32 140 0v78H0z" fill="${light}" opacity=".38"/><path d="M72 112l58-38 58 38v62H72zM246 124l52-34 52 34v50H246z" fill="${mid}"/><path d="M72 112h116M246 124h104" stroke="${light}" stroke-width="8"/><rect x="100" y="137" width="28" height="37" fill="${dark}" opacity=".36"/>${trees}`,
+    health: `${building}<rect x="222" y="72" width="56" height="56" rx="12" fill="${light}"/><path d="M250 86v28M236 100h28" stroke="${dark}" stroke-width="9" stroke-linecap="round"/><path d="M62 176c86-56 145-56 231 0 52 34 95 29 145-14" fill="none" stroke="${light}" stroke-width="12" opacity=".38"/>`,
+    terminal: `<path d="M58 147h384" stroke="${light}" stroke-width="16" opacity=".7"/><path d="M92 96h228c43 0 78 29 86 67H92z" fill="${mid}"/><path d="M112 116h250" stroke="${light}" stroke-width="9" opacity=".72"/><path d="M244 58l126 36-126 21-90-20z" fill="${light}" opacity=".88"/>`,
+    industry: `${building}<path d="M66 176h370" stroke="${dark}" stroke-width="12" opacity=".28"/><path d="M82 124l36-24 36 24 36-24 36 24v48H82z" fill="${light}" opacity=".9"/><rect x="328" y="64" width="32" height="108" fill="${mid}"/><path d="M344 58c24-24 54-12 58 14" fill="none" stroke="${light}" stroke-width="7" opacity=".6"/>`,
+    commerce: `${building}<path d="M70 94h360v48c-29 16-57 16-86 0-29 16-57 16-86 0-29 16-57 16-86 0-34 17-66 15-102 0z" fill="${light}"/><path d="M108 142v30M188 142v30M268 142v30M348 142v30" stroke="${dark}" stroke-width="7" opacity=".25"/>`,
+    tectonic: `<path d="M74 174L176 54l102 120M180 174L282 54l102 120" fill="none" stroke="${light}" stroke-width="12" stroke-linejoin="round"/><path d="M118 122h224M146 92h164M92 152h280" stroke="${mid}" stroke-width="10" opacity=".95"/>${trees}`,
+    campus: `${building}<path d="M96 174V94l84-36 84 36v80M264 174V104h120v70" fill="none" stroke="${light}" stroke-width="10"/><circle cx="180" cy="94" r="18" fill="${mid}"/><path d="M54 176h392" stroke="${dark}" stroke-width="12" opacity=".22"/>`
+  };
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 338" role="img" aria-label="${topic.title}封面"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${dark}"/><stop offset="1" stop-color="${mid}"/></linearGradient><radialGradient id="sun" cx="84%" cy="18%" r="38%"><stop stop-color="${light}" stop-opacity=".72"/><stop offset="1" stop-color="${light}" stop-opacity="0"/></radialGradient></defs><rect width="500" height="338" fill="url(#g)"/><rect width="500" height="338" fill="url(#sun)"/><path d="M0 214c68-34 130-34 186 0s108 34 158 0 98-34 156 0v124H0z" fill="${dark}" opacity=".2"/><g transform="translate(${seed % 2 ? 0 : 10} 50)">${scenes[kind] || scenes.public}</g><path d="M30 42h118M30 66h76" stroke="${light}" stroke-width="8" stroke-linecap="round" opacity=".55"/><circle cx="428" cy="58" r="28" fill="none" stroke="${light}" stroke-width="6" opacity=".45"/></svg>`;
+}
+function coverSrc(topic) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(coverSvg(topic))}`;
+}
+function escapeAttr(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 function card(item) {
   const { topic, score } = item;
@@ -94,7 +136,7 @@ function card(item) {
   node.tabIndex = 0;
   node.setAttribute("role", "button");
   node.setAttribute("aria-label", `查看 ${topic.title}`);
-  node.innerHTML = `${coverMarkup(topic)}<div class="card-body"><div class="meta-row"><span>选题 ${topic.no}</span><span class="match-badge">${showAllMode ? "全部" : matchLevel(score)}</span></div><h3>${topic.title}</h3><p class="reason">${showAllMode ? topic.bestFor : reasonFor(topic)}</p><div class="tag-row">${topic.audiences.slice(0, 3).map((item) => `<span class="tag">${item}</span>`).join("")}</div></div>`;
+  node.innerHTML = `<img src="${coverSrc(topic)}" alt="${escapeAttr(topic.title)} 封面" loading="lazy" style="display:block;width:100%;aspect-ratio:1.48;object-fit:cover;background:#ebe7dc"><div class="card-body"><div class="meta-row"><span>选题 ${topic.no}</span><span class="match-badge">${showAllMode ? "全部" : matchLevel(score)}</span></div><h3>${topic.title}</h3><p class="reason">${showAllMode ? topic.bestFor : reasonFor(topic)}</p><div class="tag-row">${topic.audiences.slice(0, 3).map((item) => `<span class="tag">${item}</span>`).join("")}</div></div>`;
   node.addEventListener("click", () => openDrawer(topic));
   node.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDrawer(topic); } });
   return node;
@@ -132,8 +174,10 @@ function resetAll() {
 }
 function detail(label, value) { return `<div class="detail-item"><span>${label}</span>${value}</div>`; }
 function openDrawer(topic) {
-  $("drawerCover").className = `drawer-cover topic-cover ${coverTone(topic)}`;
-  $("drawerCover").innerHTML = coverMarkup(topic).replace(/^<div class="topic-cover [^"]+">|<\/div>$/g, "");
+  const drawerCover = $("drawerCover");
+  drawerCover.src = coverSrc(topic);
+  drawerCover.alt = `${topic.title} 封面`;
+  drawerCover.style.objectFit = "cover";
   $("drawerNo").textContent = `选题 ${topic.no} / ${topic.team}`;
   $("drawerTitle").textContent = topic.title;
   $("drawerSubtitle").textContent = topic.subtitle;
