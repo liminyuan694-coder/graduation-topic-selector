@@ -45,6 +45,12 @@ function matchLevel(score) {
   if (score >= 8) return "可考虑";
   return "备选";
 }
+function matchMeta(score, allMode = false) {
+  if (allMode) return { label: "全部", className: "match-all", edge: "#d6d1c4", shadow: "0 16px 36px rgba(23,25,22,.08)" };
+  if (score >= 16) return { label: "高匹配", className: "match-high", edge: "#2e8b62", shadow: "0 18px 42px rgba(46,139,98,.18)" };
+  if (score >= 8) return { label: "可考虑", className: "match-mid", edge: "#d88935", shadow: "0 18px 42px rgba(216,137,53,.18)" };
+  return { label: "备选", className: "match-low", edge: "#9a978b", shadow: "0 16px 34px rgba(92,91,84,.12)" };
+}
 function createChoice(option) {
   const button = document.createElement("button");
   button.type = "button";
@@ -137,17 +143,26 @@ function sourceSummary(topic) {
   if (hasBrief) kinds.push("教师推介简表");
   if (hasIntroPdf) kinds.push("题目介绍 PDF");
   if (!kinds.length && files.length) kinds.push("原始选题材料");
-  const merged = files.length > 1 ? "已合并同一选题的重复材料。" : "已按单份材料摘要。";
-  return `来源：${kinds.join(" + ")}。${merged}本页只保留筛选所需的题名、规模、工作方式、成果要求和基于材料的适合人群推测。`;
+  const merged = files.length > 1 ? "已合并同一选题的重复材料" : "已按单份材料摘要";
+  return `来源：${kinds.join(" + ")}（${files.length || 1} 份材料）。${merged}；网页保留题名、教师、规模、工作方式、成果要求和关键词等可核对信息，适合人群与慎选提示为基于材料的二次归纳。`;
+}
+function materialDigest(topic) {
+  const skillText = topic.skills.slice(0, 6).join("、");
+  const typeText = [...topic.type, ...topic.nature].join("、");
+  const audienceText = topic.audiences.slice(0, 4).join("、");
+  return `<div class="digest-grid"><div class="digest-card"><span>材料对象</span><p>${topic.subtitle}。材料给出的规模口径为：${topic.scale}。</p></div><div class="digest-card"><span>任务结构</span><p>${topic.workMode}。题目类型集中在：${typeText}。</p></div><div class="digest-card"><span>产出要求</span><p>${topic.deliverables}</p></div><div class="digest-card"><span>能力依据</span><p>从题目要求归纳出的核心能力是：${skillText}。推荐人群暂归为：${audienceText}。</p></div></div><p class="digest-main">${topic.summary}</p><p class="digest-note">${sourceSummary(topic)}</p>`;
 }
 function card(item) {
   const { topic, score } = item;
   const node = document.createElement("article");
-  node.className = "card";
+  const meta = matchMeta(score, showAllMode);
+  node.className = `card ${meta.className}`;
+  node.style.borderColor = meta.edge;
+  node.style.boxShadow = meta.shadow;
   node.tabIndex = 0;
   node.setAttribute("role", "button");
   node.setAttribute("aria-label", `查看 ${topic.title}`);
-  node.innerHTML = `<img src="${coverSrc(topic)}" alt="${escapeAttr(topic.title)} 封面" loading="lazy" style="display:block;width:100%;aspect-ratio:1.48;object-fit:cover;background:#ebe7dc"><div class="card-body"><div class="meta-row"><span>选题 ${topic.no}</span><span class="match-badge">${showAllMode ? "全部" : matchLevel(score)}</span></div><h3>${topic.title}</h3><p class="reason">${showAllMode ? topic.bestFor : reasonFor(topic)}</p><div class="tag-row">${topic.audiences.slice(0, 3).map((item) => `<span class="tag">${item}</span>`).join("")}</div></div>`;
+  node.innerHTML = `<img src="${coverSrc(topic)}" alt="${escapeAttr(topic.title)} 封面" loading="lazy" style="display:block;width:100%;aspect-ratio:1.48;object-fit:cover;background:#ebe7dc"><div class="card-body"><div class="meta-row"><span>选题 ${topic.no}</span><span class="match-badge ${meta.className}">${meta.label}</span></div><h3>${topic.title}</h3><p class="reason">${showAllMode ? topic.bestFor : reasonFor(topic)}</p><div class="tag-row">${topic.audiences.slice(0, 3).map((item) => `<span class="tag">${item}</span>`).join("")}</div></div>`;
   node.addEventListener("click", () => openDrawer(topic));
   node.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDrawer(topic); } });
   return node;
@@ -163,7 +178,7 @@ function renderResults(items, mode) {
     return;
   }
   $("resultTitle").textContent = mode === "all" ? "全部题目" : `为你推荐 ${items.length} 个题目`;
-  $("resultText").textContent = mode === "all" ? "下面按原始编号展示全部题目，适合横向浏览。" : `根据 ${selected.size} 个偏好${$("searchInput").value.trim() ? "和关键词" : ""}排序，优先展示匹配度更高的选项。`;
+  $("resultText").textContent = mode === "all" ? "下面按原始编号展示全部题目，适合横向浏览。" : `根据 ${selected.size} 个偏好${$("searchInput").value.trim() ? "和关键词" : ""}排序，绿色为高匹配，橙色为可考虑，灰色为备选。`;
   items.forEach((item) => cards.appendChild(card(item)));
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -196,7 +211,7 @@ function openDrawer(topic) {
     detail("指导教师", topic.teachers), detail("招生", topic.quota), detail("类型", topic.type.join("、")), detail("性质", topic.nature.join("、")),
     detail("规模", topic.scale), detail("工作形式", topic.workMode), detail("综合难度", `${avgDifficulty(topic)} / 5`), detail("关键词", topic.keywords.join("、"))
   ].join("");
-  $("drawerSummary").textContent = topic.summary;
+  $("drawerSummary").innerHTML = materialDigest(topic);
   $("drawerBest").textContent = topic.bestFor;
   $("drawerCaution").textContent = topic.caution;
   $("drawerDeliverables").textContent = topic.deliverables;
@@ -205,7 +220,15 @@ function openDrawer(topic) {
   $("drawer").setAttribute("aria-hidden", "false");
 }
 function closeDrawer() { $("drawer").classList.remove("open"); $("drawer").setAttribute("aria-hidden", "true"); }
+function injectEnhancementStyles() {
+  if (document.getElementById("enhancementStyles")) return;
+  const style = document.createElement("style");
+  style.id = "enhancementStyles";
+  style.textContent = `.match-badge.match-high{background:#2e8b62;color:#fff}.match-badge.match-mid{background:#d88935;color:#fff}.match-badge.match-low{background:#7f8279;color:#fff}.match-badge.match-all{background:#373a33;color:#fff}.card.match-high{background:linear-gradient(180deg,#fffdf9,#f6fbf6)}.card.match-mid{background:linear-gradient(180deg,#fffdf9,#fff7ed)}.card.match-low{background:linear-gradient(180deg,#fffdf9,#f5f4ef)}.digest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}.digest-card{padding:13px 14px;border:1px solid var(--line);border-radius:16px;background:#f7f4ec}.digest-card span{display:block;margin-bottom:6px;color:var(--ink);font-size:12px;font-weight:900}.digest-card p{margin:0;color:var(--muted);line-height:1.72}.digest-main{margin:14px 0 0;color:var(--ink)!important}.digest-note{margin-top:12px;padding:12px 14px;border-left:4px solid var(--accent);background:#f2f0e8;color:#55584f!important}.drawer-content #sourceList{font-size:13px;color:#73766d}@media(max-width:680px){.digest-grid{grid-template-columns:1fr}}`;
+  document.head.appendChild(style);
+}
 function init() {
+  injectEnhancementStyles();
   mountChoices(); updateHint();
   $("generateBtn").addEventListener("click", generate);
   $("showAll").addEventListener("click", showAll);
