@@ -129,6 +129,17 @@ function coverSrc(topic) {
 function escapeAttr(value) {
   return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
+function sourceSummary(topic) {
+  const files = topic.sourceFiles || [];
+  const hasBrief = files.some((name) => name.includes("简表") || name.includes("推介表") || name.includes("申报表"));
+  const hasIntroPdf = files.some((name) => name.toLowerCase().endsWith(".pdf") && !(name.includes("简表") || name.includes("推介表") || name.includes("申报表")));
+  const kinds = [];
+  if (hasBrief) kinds.push("教师推介简表");
+  if (hasIntroPdf) kinds.push("题目介绍 PDF");
+  if (!kinds.length && files.length) kinds.push("原始选题材料");
+  const merged = files.length > 1 ? "已合并同一选题的重复材料。" : "已按单份材料摘要。";
+  return `来源：${kinds.join(" + ")}。${merged}本页只保留筛选所需的题名、规模、工作方式、成果要求和基于材料的适合人群推测。`;
+}
 function card(item) {
   const { topic, score } = item;
   const node = document.createElement("article");
@@ -189,7 +200,7 @@ function openDrawer(topic) {
   $("drawerBest").textContent = topic.bestFor;
   $("drawerCaution").textContent = topic.caution;
   $("drawerDeliverables").textContent = topic.deliverables;
-  $("sourceList").innerHTML = topic.sourceFiles.map((item) => `<li>${item}</li>`).join("");
+  $("sourceList").textContent = sourceSummary(topic);
   $("drawer").classList.add("open");
   $("drawer").setAttribute("aria-hidden", "false");
 }
